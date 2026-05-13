@@ -47,6 +47,38 @@ def list_priorities() -> list[dict[str, Any]]:
     ]
 
 
+def list_users(limit: int = 25, offset: int = 0) -> dict[str, Any]:
+    """Return a paginated list of Redmine users.
+
+    Requires the API key to belong to an administrator account — Redmine
+    returns 403 for non-admin keys.
+
+    Args:
+        limit: Max results per page (1–100).
+        offset: Number of records to skip.
+
+    Returns:
+        {total_count, offset, limit, users: [{id, login, firstname, lastname}]}
+    """
+    data = client.get("/users.json", {"limit": limit, "offset": offset})
+    if data.get("error"):
+        return data
+    return {
+        "total_count": data.get("total_count", 0),
+        "offset": data.get("offset", offset),
+        "limit": data.get("limit", limit),
+        "users": [
+            {
+                "id": u["id"],
+                "login": u["login"],
+                "firstname": u["firstname"],
+                "lastname": u["lastname"],
+            }
+            for u in data.get("users", [])
+        ],
+    }
+
+
 def list_versions(project_id: str | int) -> list[dict[str, Any]]:
     """Return all versions (sprints / milestones) defined in a project.
 

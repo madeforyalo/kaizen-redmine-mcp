@@ -53,6 +53,50 @@ def test_list_priorities(httpx_mock: HTTPXMock) -> None:
     assert result[2]["name"] == "High"
 
 
+def test_list_users(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE}/users.json?limit=25&offset=0",
+        json={
+            "total_count": 2,
+            "offset": 0,
+            "limit": 25,
+            "users": [
+                {"id": 1, "login": "admin", "firstname": "Admin", "lastname": "User", "mail": "admin@k.test"},
+                {"id": 2, "login": "bot", "firstname": "Bot", "lastname": "User", "mail": "bot@k.test"},
+            ],
+        },
+    )
+    from kaizen_redmine_mcp.tools.enums import list_users
+
+    result = list_users()
+    assert result["total_count"] == 2
+    assert result["users"][0] == {"id": 1, "login": "admin", "firstname": "Admin", "lastname": "User"}
+    assert "mail" not in result["users"][0]
+
+
+def test_list_users_pagination(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE}/users.json?limit=1&offset=1",
+        json={"total_count": 2, "offset": 1, "limit": 1, "users": [
+            {"id": 2, "login": "bot", "firstname": "Bot", "lastname": "User"},
+        ]},
+    )
+    from kaizen_redmine_mcp.tools.enums import list_users
+
+    result = list_users(limit=1, offset=1)
+    assert result["offset"] == 1
+    assert len(result["users"]) == 1
+
+
+def test_list_users_403(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=f"{BASE}/users.json?limit=25&offset=0", status_code=403)
+    from kaizen_redmine_mcp.tools.enums import list_users
+
+    result = list_users()
+    assert result["error"] is True
+    assert result["status_code"] == 403
+
+
 def test_list_versions(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=f"{BASE}/projects/alpha/versions.json",
