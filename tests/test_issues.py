@@ -82,6 +82,40 @@ def test_create_issue(httpx_mock: HTTPXMock) -> None:
     assert result["id"] == 99
 
 
+def test_create_issue_with_category(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE}/issues.json",
+        method="POST",
+        json={"issue": {**ISSUE_FIXTURE, "id": 100, "category": {"id": 5, "name": "Backend"}}},
+        status_code=201,
+    )
+    from kaizen_redmine_mcp.tools.issues import create_issue
+
+    result = create_issue(project_id="alpha", subject="Backend task", category_id=5)
+    assert result["id"] == 100
+    request = httpx_mock.get_requests()[-1]
+    import json
+    body = json.loads(request.content)
+    assert body["issue"]["category_id"] == 5
+
+
+def test_create_issue_category_omitted_when_none(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE}/issues.json",
+        method="POST",
+        json={"issue": {**ISSUE_FIXTURE, "id": 101}},
+        status_code=201,
+    )
+    from kaizen_redmine_mcp.tools.issues import create_issue
+
+    result = create_issue(project_id="alpha", subject="No category")
+    assert result["id"] == 101
+    request = httpx_mock.get_requests()[-1]
+    import json
+    body = json.loads(request.content)
+    assert "category_id" not in body["issue"]
+
+
 def test_create_issue_read_only() -> None:
     from kaizen_redmine_mcp.config import config
     from kaizen_redmine_mcp.tools.issues import create_issue
