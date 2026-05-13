@@ -116,6 +116,38 @@ def test_create_issue_category_omitted_when_none(httpx_mock: HTTPXMock) -> None:
     assert "category_id" not in body["issue"]
 
 
+def test_create_issue_with_fixed_version(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE}/issues.json",
+        method="POST",
+        json={"issue": {**ISSUE_FIXTURE, "id": 102, "fixed_version": {"id": 3, "name": "v1.0"}}},
+        status_code=201,
+    )
+    from kaizen_redmine_mcp.tools.issues import create_issue
+
+    result = create_issue(project_id="alpha", subject="v1.0 task", fixed_version_id=3)
+    assert result["id"] == 102
+    import json
+    body = json.loads(httpx_mock.get_requests()[-1].content)
+    assert body["issue"]["fixed_version_id"] == 3
+
+
+def test_create_issue_fixed_version_omitted_when_none(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE}/issues.json",
+        method="POST",
+        json={"issue": {**ISSUE_FIXTURE, "id": 103}},
+        status_code=201,
+    )
+    from kaizen_redmine_mcp.tools.issues import create_issue
+
+    result = create_issue(project_id="alpha", subject="No version")
+    assert result["id"] == 103
+    import json
+    body = json.loads(httpx_mock.get_requests()[-1].content)
+    assert "fixed_version_id" not in body["issue"]
+
+
 def test_create_issue_read_only() -> None:
     from kaizen_redmine_mcp.config import config
     from kaizen_redmine_mcp.tools.issues import create_issue

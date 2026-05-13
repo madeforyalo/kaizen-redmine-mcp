@@ -104,6 +104,7 @@ def create_issue(
     priority_id: int | None = None,
     assigned_to_id: int | None = None,
     category_id: int | None = None,
+    fixed_version_id: int | None = None,
     parent_issue_id: int | None = None,
     due_date: str | None = None,
     start_date: str | None = None,
@@ -121,6 +122,7 @@ def create_issue(
         priority_id: Priority ID. Defaults to project default.
         assigned_to_id: User ID to assign the issue to.
         category_id: Issue category ID. Defaults to none.
+        fixed_version_id: Target version (sprint/milestone) ID. Defaults to none.
         parent_issue_id: ID of parent issue (for subtasks).
         due_date: Due date in YYYY-MM-DD format.
         start_date: Start date in YYYY-MM-DD format.
@@ -142,6 +144,7 @@ def create_issue(
         ("priority_id", priority_id),
         ("assigned_to_id", assigned_to_id),
         ("category_id", category_id),
+        ("fixed_version_id", fixed_version_id),
         ("parent_issue_id", parent_issue_id),
         ("due_date", due_date),
         ("start_date", start_date),
