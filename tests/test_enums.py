@@ -53,6 +53,45 @@ def test_list_priorities(httpx_mock: HTTPXMock) -> None:
     assert result[2]["name"] == "High"
 
 
+def test_list_versions(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE}/projects/alpha/versions.json",
+        json={
+            "versions": [
+                {"id": 1, "name": "v1.0", "status": "open", "due_date": "2024-06-30"},
+                {"id": 2, "name": "Backlog", "status": "open", "due_date": None},
+                {"id": 3, "name": "v0.9", "status": "closed", "due_date": "2024-01-01"},
+            ]
+        },
+    )
+    from kaizen_redmine_mcp.tools.enums import list_versions
+
+    result = list_versions("alpha")
+    assert len(result) == 3
+    assert result[0] == {"id": 1, "name": "v1.0", "status": "open", "due_date": "2024-06-30"}
+    assert result[2]["status"] == "closed"
+
+
+def test_list_versions_numeric_id(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE}/projects/42/versions.json",
+        json={"versions": [{"id": 7, "name": "Sprint 1", "status": "open", "due_date": None}]},
+    )
+    from kaizen_redmine_mcp.tools.enums import list_versions
+
+    result = list_versions(42)
+    assert result[0]["id"] == 7
+
+
+def test_list_versions_404(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=f"{BASE}/projects/missing/versions.json", status_code=404)
+    from kaizen_redmine_mcp.tools.enums import list_versions
+
+    result = list_versions("missing")
+    assert result[0]["error"] is True
+    assert result[0]["status_code"] == 404
+
+
 def test_list_trackers_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=f"{BASE}/trackers.json", status_code=401)
     from kaizen_redmine_mcp.tools.enums import list_trackers

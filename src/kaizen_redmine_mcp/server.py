@@ -4,7 +4,7 @@ import logging
 
 from fastmcp import FastMCP
 
-from .tools.enums import list_issue_statuses, list_priorities, list_trackers
+from .tools.enums import list_issue_statuses, list_priorities, list_trackers, list_versions
 from .tools.issues import create_issue, get_issue, list_issues, update_issue
 from .tools.projects import (
     create_project,
@@ -28,6 +28,7 @@ mcp.tool()(get_issue)
 mcp.tool()(list_trackers)
 mcp.tool()(list_issue_statuses)
 mcp.tool()(list_priorities)
+mcp.tool()(list_versions)
 
 # -- Write tools (honoured or blocked based on read-only flag inside each function) --
 mcp.tool()(create_project)
