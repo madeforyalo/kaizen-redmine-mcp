@@ -49,6 +49,17 @@ docker compose up -d
 | `REDMINE_MCP_READ_ONLY` | no | `false` | When `true`, write tools return an error without touching Redmine |
 | `LOG_LEVEL` | no | `INFO` | `DEBUG` / `INFO` / `WARNING` / `ERROR` |
 
+## Transport
+
+The server uses **SSE transport** (Server-Sent Events), which is the protocol expected by Claude Desktop and Cowork. It exposes two endpoints:
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `GET /sse` | GET | Event stream — clients subscribe here |
+| `POST /messages/` | POST | JSON-RPC messages from client to server |
+
+> **Why not Streamable HTTP?** The newer `streamable-http` transport only accepts POST requests and returns `406 Not Acceptable` when clients connect with `Accept: text/event-stream`. SSE transport handles both directions correctly and is what Claude Desktop / Cowork expect.
+
 ## Connecting to Claude Desktop / Cowork
 
 Add the following to your `mcp_servers` configuration (Claude Desktop `claude_desktop_config.json` or Cowork settings):
@@ -58,7 +69,7 @@ Add the following to your `mcp_servers` configuration (Claude Desktop `claude_de
   "mcpServers": {
     "kaizen-redmine": {
       "command": "uvx",
-      "args": ["--from", "fastmcp", "fastmcp", "run", "http://127.0.0.1:8000/mcp"]
+      "args": ["--from", "fastmcp", "fastmcp", "run", "http://127.0.0.1:8000/sse"]
     }
   }
 }
@@ -71,7 +82,7 @@ If `uvx` is not available, use:
   "mcpServers": {
     "kaizen-redmine": {
       "command": "python",
-      "args": ["-c", "import fastmcp; fastmcp.run_client('http://127.0.0.1:8000/mcp')"]
+      "args": ["-c", "import fastmcp; fastmcp.run_client('http://127.0.0.1:8000/sse')"]
     }
   }
 }
@@ -91,7 +102,7 @@ On your local machine:
 ssh -N -L 8000:127.0.0.1:8000 user@your-server.example.com
 ```
 
-The MCP client on your machine connects to `http://127.0.0.1:8000/mcp` as if the server were local. The port is never exposed to the internet.
+The MCP client on your machine connects to `http://127.0.0.1:8000/sse` as if the server were local. The port is never exposed to the internet.
 
 ## Running Tests
 
