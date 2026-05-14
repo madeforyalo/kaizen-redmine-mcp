@@ -5,7 +5,7 @@ import logging
 from fastmcp import FastMCP
 
 from .tools.enums import list_issue_statuses, list_priorities, list_trackers, list_users, list_versions
-from .tools.issues import create_issue, get_issue, list_issues, update_issue
+from .tools.issues import create_issue, get_issue, list_issues, search_issues, update_issue
 from .tools.projects import (
     create_project,
     find_project,
@@ -24,6 +24,7 @@ mcp.tool()(list_projects)
 mcp.tool()(find_project)
 mcp.tool()(get_project)
 mcp.tool()(list_issues)
+mcp.tool()(search_issues)
 mcp.tool()(get_issue)
 mcp.tool()(list_trackers)
 mcp.tool()(list_issue_statuses)

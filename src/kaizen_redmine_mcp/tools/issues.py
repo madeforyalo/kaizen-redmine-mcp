@@ -95,6 +95,76 @@ def get_issue(issue_id: int, include_journals: bool = True) -> dict[str, Any]:
     return data.get("issue", data)
 
 
+def search_issues(
+    query: str,
+    project_id: str | int | None = None,
+    status_id: str | int | None = None,
+    limit: int = 25,
+) -> dict[str, Any]:
+    """Search for issues whose subject or description contains the query string.
+
+    Uses two Redmine endpoints and merges results:
+    - GET /issues.json?subject=~query  (subject contains, fast)
+    - GET /search.json?q=query&issues=1 (full-text: subject + description),
+      then re-fetches matched issue IDs in batch to get the compact fields.
+
+    Results from both sources are deduplicated by ID and returned together.
+    If the Redmine instance does not support one of the endpoints, that source
+    is silently skipped so the other still works.
+
+    Args:
+        query: Text to search for (case-insensitive substring).
+        project_id: Restrict search to a specific project (numeric ID or identifier).
+        status_id: Filter by status. Use 'open', 'closed', or '*' (any).
+        limit: Maximum number of results to return (applied after deduplication).
+
+    Returns:
+        {total_count, issues: [{id, subject, project, tracker, status,
+         priority, assigned_to, author, created_on, updated_on}]}
+    """
+    seen: dict[int, dict[str, Any]] = {}
+
+    # --- Source 1: subject contains ---
+    params1: dict[str, Any] = {"subject": f"~{query}", "limit": limit}
+    if project_id is not None:
+        params1["project_id"] = project_id
+    if status_id is not None:
+        params1["status_id"] = status_id
+
+    data1 = client.get("/issues.json", params1)
+    if not data1.get("error"):
+        for issue in data1.get("issues", []):
+            seen[issue["id"]] = _compact_issue(issue)
+
+    # --- Source 2: full-text search (subject + description) ---
+    params2: dict[str, Any] = {"q": query, "issues": 1, "limit": limit}
+    if project_id is not None:
+        params2["scope"] = f"project:{project_id}"
+
+    data2 = client.get("/search.json", params2)
+    if not data2.get("error"):
+        # Extract issue IDs not already found via source 1
+        new_ids = [
+            r["id"]
+            for r in data2.get("results", [])
+            if "issue" in r.get("type", "") and r["id"] not in seen
+        ]
+        if new_ids:
+            # Batch-fetch the new IDs to get the same compact fields
+            id_str = ",".join(str(i) for i in new_ids[:limit])
+            params3: dict[str, Any] = {"issue_id": id_str, "limit": len(new_ids)}
+            if status_id is not None:
+                params3["status_id"] = status_id
+            data3 = client.get("/issues.json", params3)
+            if not data3.get("error"):
+                for issue in data3.get("issues", []):
+                    if issue["id"] not in seen:
+                        seen[issue["id"]] = _compact_issue(issue)
+
+    issues = list(seen.values())[:limit]
+    return {"total_count": len(issues), "issues": issues}
+
+
 def create_issue(
     project_id: str | int,
     subject: str,

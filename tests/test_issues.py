@@ -21,6 +21,97 @@ ISSUE_FIXTURE = {
 }
 
 
+def test_search_issues_subject_only(httpx_mock: HTTPXMock) -> None:
+    """Results found via subject search; search.json returns nothing new."""
+    httpx_mock.add_response(
+        url=f"{BASE}/issues.json?subject=%7Elogin&limit=25",
+        json={"total_count": 1, "offset": 0, "limit": 25, "issues": [ISSUE_FIXTURE]},
+    )
+    httpx_mock.add_response(
+        url=f"{BASE}/search.json?q=login&issues=1&limit=25",
+        json={"total_count": 0, "results": []},
+    )
+    from kaizen_redmine_mcp.tools.issues import search_issues
+
+    result = search_issues("login")
+    assert result["total_count"] == 1
+    assert result["issues"][0]["id"] == 10
+    assert "description" not in result["issues"][0]
+
+
+def test_search_issues_deduplication(httpx_mock: HTTPXMock) -> None:
+    """Issue found by both subject and full-text search appears only once."""
+    httpx_mock.add_response(
+        url=f"{BASE}/issues.json?subject=%7Elogin&limit=25",
+        json={"total_count": 1, "offset": 0, "limit": 25, "issues": [ISSUE_FIXTURE]},
+    )
+    httpx_mock.add_response(
+        url=f"{BASE}/search.json?q=login&issues=1&limit=25",
+        json={"total_count": 1, "results": [{"id": 10, "type": "issue", "title": "Fix login bug"}]},
+    )
+    from kaizen_redmine_mcp.tools.issues import search_issues
+
+    result = search_issues("login")
+    assert result["total_count"] == 1  # not 2
+
+
+def test_search_issues_description_hit(httpx_mock: HTTPXMock) -> None:
+    """Issue found only via description (full-text search) gets batch-fetched."""
+    httpx_mock.add_response(
+        url=f"{BASE}/issues.json?subject=%7Elogin&limit=25",
+        json={"total_count": 0, "offset": 0, "limit": 25, "issues": []},
+    )
+    httpx_mock.add_response(
+        url=f"{BASE}/search.json?q=login&issues=1&limit=25",
+        json={"total_count": 1, "results": [{"id": 10, "type": "issue", "title": "Fix login bug"}]},
+    )
+    httpx_mock.add_response(
+        url=f"{BASE}/issues.json?issue_id=10&limit=1",
+        json={"total_count": 1, "offset": 0, "limit": 1, "issues": [ISSUE_FIXTURE]},
+    )
+    from kaizen_redmine_mcp.tools.issues import search_issues
+
+    result = search_issues("login")
+    assert result["total_count"] == 1
+    assert result["issues"][0]["id"] == 10
+
+
+def test_search_issues_with_project_and_status(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE}/issues.json?subject=%7Ebug&limit=10&project_id=alpha&status_id=open",
+        json={"total_count": 0, "offset": 0, "limit": 10, "issues": []},
+    )
+    httpx_mock.add_response(
+        url=f"{BASE}/search.json?q=bug&issues=1&limit=10&scope=project%3Aalpha",
+        json={"total_count": 0, "results": []},
+    )
+    from kaizen_redmine_mcp.tools.issues import search_issues
+
+    result = search_issues("bug", project_id="alpha", status_id="open", limit=10)
+    assert result["issues"] == []
+
+
+def test_search_issues_subject_error_still_runs_fulltext(httpx_mock: HTTPXMock) -> None:
+    """If subject search fails (e.g. 422), full-text search still runs."""
+    httpx_mock.add_response(
+        url=f"{BASE}/issues.json?subject=%7Elogin&limit=25",
+        status_code=422,
+    )
+    httpx_mock.add_response(
+        url=f"{BASE}/search.json?q=login&issues=1&limit=25",
+        json={"total_count": 1, "results": [{"id": 10, "type": "issue", "title": "Fix login bug"}]},
+    )
+    httpx_mock.add_response(
+        url=f"{BASE}/issues.json?issue_id=10&limit=1",
+        json={"total_count": 1, "offset": 0, "limit": 1, "issues": [ISSUE_FIXTURE]},
+    )
+    from kaizen_redmine_mcp.tools.issues import search_issues
+
+    result = search_issues("login")
+    assert result["total_count"] == 1
+    assert result["issues"][0]["id"] == 10
+
+
 def test_list_issues(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=f"{BASE}/issues.json?limit=25&offset=0&sort=updated_on%3Adesc",
