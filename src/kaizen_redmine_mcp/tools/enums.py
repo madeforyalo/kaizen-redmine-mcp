@@ -47,6 +47,25 @@ def list_priorities() -> list[dict[str, Any]]:
     ]
 
 
+def list_time_entry_activities() -> list[dict[str, Any]]:
+    """Return all time entry activity types defined in Redmine.
+
+    Use the returned IDs as the activity_id parameter when calling log_time
+    or update_time_entry. Common activities: Development, Support, Meeting,
+    Design, Testing.
+
+    Returns:
+        List of {id, name} dicts.
+    """
+    data = client.get("/enumerations/time_entry_activities.json")
+    if data.get("error"):
+        return [data]
+    return [
+        {"id": a["id"], "name": a["name"]}
+        for a in data.get("time_entry_activities", [])
+    ]
+
+
 def list_users(limit: int = 25, offset: int = 0) -> dict[str, Any]:
     """Return a paginated list of Redmine users.
 

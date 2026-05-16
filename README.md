@@ -21,6 +21,12 @@ A compact [Model Context Protocol](https://modelcontextprotocol.io/) server that
 | `create_project` | Create a new project (or subproject) |
 | `create_issue` | Create a new issue with optional fields (`tracker_id`, `priority_id`, `category_id`, `fixed_version_id`, etc.) |
 | `update_issue` | Update fields and/or add a journal note to an issue |
+| `list_time_entry_activities` | List available time entry activity types (Development, Support, Meeting…) |
+| `log_time` | Log hours spent on an issue |
+| `list_time_entries` | List time entries with optional filters (issue, project, user, date) |
+| `get_time_entry` | Full detail of a single time entry |
+| `update_time_entry` | Modify hours, activity, date or comment of an existing entry |
+| `delete_time_entry` | Permanently delete a time entry |
 
 ## Quick Start (Docker)
 

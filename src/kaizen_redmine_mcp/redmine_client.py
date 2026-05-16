@@ -64,6 +64,16 @@ class RedmineClient:
         except httpx.RequestError as exc:
             return {"error": True, "status_code": 0, "message": str(exc)}
 
+    def delete(self, path: str) -> dict[str, Any]:
+        try:
+            r = self._client.delete(path)
+            logger.debug("DELETE %s → %s", path, r.status_code)
+            if r.status_code >= 400:
+                return _error(r.status_code, r.text)
+            return {"ok": True}
+        except httpx.RequestError as exc:
+            return {"error": True, "status_code": 0, "message": str(exc)}
+
     def close(self) -> None:
         self._client.close()
 
