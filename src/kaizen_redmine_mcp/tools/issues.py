@@ -1,9 +1,21 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TypedDict
 
 from ..config import config
 from ..redmine_client import client
+
+
+class CustomFieldValue(TypedDict):
+    """A single custom field value for an issue.
+
+    Attributes:
+        id: Numeric ID of the custom field (use list_custom_fields to discover).
+        value: String value to set (use list_custom_fields to see allowed values).
+    """
+
+    id: int
+    value: str
 
 _READ_ONLY_ERROR = {"error": True, "message": "Server is in read-only mode."}
 
@@ -180,7 +192,7 @@ def create_issue(
     start_date: str | None = None,
     estimated_hours: float | None = None,
     watcher_user_ids: list[int] | None = None,
-    custom_fields: list[dict[str, Any]] | None = None,
+    custom_fields: list[CustomFieldValue] | None = None,
 ) -> dict[str, Any]:
     """Create a new issue in a Redmine project.
 
