@@ -47,6 +47,36 @@ def list_priorities() -> list[dict[str, Any]]:
     ]
 
 
+def list_custom_fields() -> list[dict[str, Any]]:
+    """Return all custom fields defined for issues in Redmine.
+
+    Use this to discover the numeric ID and allowed values of custom fields
+    before calling create_issue with the custom_fields parameter.
+    Only fields of type IssueCustomField are returned.
+
+    Returns:
+        List of {id, name, field_format, possible_values} dicts.
+        possible_values is a list of strings for 'list' fields (e.g. "Tarea",
+        "Minuta", "KAI", "Presupuesto"), or an empty list for free-text fields.
+    """
+    data = client.get("/custom_fields.json")
+    if data.get("error"):
+        return [data]
+    return [
+        {
+            "id": f["id"],
+            "name": f["name"],
+            "field_format": f.get("field_format", ""),
+            "possible_values": [
+                v["value"] if isinstance(v, dict) else v
+                for v in f.get("possible_values", [])
+            ],
+        }
+        for f in data.get("custom_fields", [])
+        if f.get("customized_type") == "issue"
+    ]
+
+
 def list_time_entry_activities() -> list[dict[str, Any]]:
     """Return all time entry activity types defined in Redmine.
 

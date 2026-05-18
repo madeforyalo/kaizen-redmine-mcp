@@ -173,6 +173,42 @@ def test_create_issue(httpx_mock: HTTPXMock) -> None:
     assert result["id"] == 99
 
 
+def test_create_issue_with_custom_fields(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE}/issues.json",
+        method="POST",
+        json={"issue": {**ISSUE_FIXTURE, "id": 200, "custom_fields": [{"id": 12, "name": "Tipo de tarea", "value": "Tarea"}]}},
+        status_code=201,
+    )
+    import json
+    from kaizen_redmine_mcp.tools.issues import create_issue
+
+    result = create_issue(
+        project_id="alpha",
+        subject="Mi tarea",
+        tracker_id=4,
+        custom_fields=[{"id": 12, "value": "Tarea"}],
+    )
+    assert result["id"] == 200
+    body = json.loads(httpx_mock.get_requests()[-1].content)
+    assert body["issue"]["custom_fields"] == [{"id": 12, "value": "Tarea"}]
+
+
+def test_create_issue_custom_fields_omitted_when_none(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE}/issues.json",
+        method="POST",
+        json={"issue": {**ISSUE_FIXTURE, "id": 201}},
+        status_code=201,
+    )
+    import json
+    from kaizen_redmine_mcp.tools.issues import create_issue
+
+    create_issue(project_id="alpha", subject="Sin custom fields")
+    body = json.loads(httpx_mock.get_requests()[-1].content)
+    assert "custom_fields" not in body["issue"]
+
+
 def test_create_issue_with_category(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=f"{BASE}/issues.json",

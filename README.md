@@ -17,9 +17,10 @@ A compact [Model Context Protocol](https://modelcontextprotocol.io/) server that
 | `list_issue_statuses` | All issue statuses with `is_closed` flag |
 | `list_priorities` | All priority levels |
 | `list_versions` | All versions (sprints / milestones) for a project — use before `create_issue` with `fixed_version_id` |
+| `list_custom_fields` | All issue custom fields with their IDs and allowed values — use before `create_issue` with `custom_fields` |
 | `list_users` | Paginated user listing (requires admin API key) |
 | `create_project` | Create a new project (or subproject) |
-| `create_issue` | Create a new issue with optional fields (`tracker_id`, `priority_id`, `category_id`, `fixed_version_id`, etc.) |
+| `create_issue` | Create a new issue with optional fields (`tracker_id`, `priority_id`, `category_id`, `fixed_version_id`, `custom_fields`, etc.) |
 | `update_issue` | Update fields and/or add a journal note to an issue |
 | `list_time_entry_activities` | List available time entry activity types (Development, Support, Meeting…) |
 | `log_time` | Log hours spent on an issue |

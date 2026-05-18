@@ -180,6 +180,7 @@ def create_issue(
     start_date: str | None = None,
     estimated_hours: float | None = None,
     watcher_user_ids: list[int] | None = None,
+    custom_fields: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Create a new issue in a Redmine project.
 
@@ -198,6 +199,10 @@ def create_issue(
         start_date: Start date in YYYY-MM-DD format.
         estimated_hours: Estimated effort in hours.
         watcher_user_ids: List of user IDs to add as watchers.
+        custom_fields: List of custom field values, each as {id: int, value: str}.
+            Use list_custom_fields to discover available field IDs and their
+            allowed values. Example: [{"id": 12, "value": "Tarea"}].
+            Required in projects that enforce mandatory custom fields.
 
     Returns:
         Created issue object or error dict.
@@ -223,6 +228,8 @@ def create_issue(
     ]:
         if val is not None:
             issue[key] = val
+    if custom_fields is not None:
+        issue["custom_fields"] = custom_fields
 
     data = client.post("/issues.json", {"issue": issue})
     if data.get("error"):

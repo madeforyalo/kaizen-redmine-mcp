@@ -5,6 +5,7 @@ import logging
 from fastmcp import FastMCP
 
 from .tools.enums import (
+    list_custom_fields,
     list_issue_statuses,
     list_priorities,
     list_time_entry_activities,
@@ -46,6 +47,7 @@ mcp.tool()(list_priorities)
 mcp.tool()(list_versions)
 mcp.tool()(list_users)
 mcp.tool()(list_time_entry_activities)
+mcp.tool()(list_custom_fields)
 
 # -- Write tools (honoured or blocked based on read-only flag inside each function) --
 mcp.tool()(create_project)

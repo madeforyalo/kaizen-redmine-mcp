@@ -5,6 +5,73 @@ from pytest_httpx import HTTPXMock
 BASE = "https://redmine.test"
 
 
+def test_list_custom_fields_filters_issue_type(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE}/custom_fields.json",
+        json={
+            "custom_fields": [
+                {
+                    "id": 12,
+                    "name": "Tipo de tarea",
+                    "customized_type": "issue",
+                    "field_format": "list",
+                    "possible_values": [
+                        {"value": "Tarea"},
+                        {"value": "Minuta"},
+                        {"value": "KAI"},
+                        {"value": "Presupuesto"},
+                    ],
+                },
+                {
+                    "id": 3,
+                    "name": "Client code",
+                    "customized_type": "project",  # should be excluded
+                    "field_format": "string",
+                    "possible_values": [],
+                },
+            ]
+        },
+    )
+    from kaizen_redmine_mcp.tools.enums import list_custom_fields
+
+    result = list_custom_fields()
+    assert len(result) == 1
+    assert result[0]["id"] == 12
+    assert result[0]["name"] == "Tipo de tarea"
+    assert result[0]["possible_values"] == ["Tarea", "Minuta", "KAI", "Presupuesto"]
+    assert result[0]["field_format"] == "list"
+
+
+def test_list_custom_fields_free_text(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE}/custom_fields.json",
+        json={
+            "custom_fields": [
+                {
+                    "id": 7,
+                    "name": "External ref",
+                    "customized_type": "issue",
+                    "field_format": "string",
+                    "possible_values": [],
+                }
+            ]
+        },
+    )
+    from kaizen_redmine_mcp.tools.enums import list_custom_fields
+
+    result = list_custom_fields()
+    assert result[0]["possible_values"] == []
+
+
+def test_list_custom_fields_error(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=f"{BASE}/custom_fields.json", status_code=403)
+    from kaizen_redmine_mcp.tools.enums import list_custom_fields
+
+    result = list_custom_fields()
+    assert result[0]["error"] is True
+    assert result[0]["status_code"] == 403
+
+
 def test_list_trackers(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=f"{BASE}/trackers.json",
